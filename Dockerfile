@@ -2,8 +2,8 @@
 # Stage 1: 构建阶段
 # ===========================================
 # 与 github-trending-api 保持一致的多阶段构建
-# Go 版本由项目 go.mod 决定 (1.23.5)
-FROM golang:1.23-alpine AS builder
+# Go 版本由项目 go.mod 决定 (1.25.0)
+FROM golang:1.25-alpine AS builder
 
 # 设置工作目录
 WORKDIR /app
