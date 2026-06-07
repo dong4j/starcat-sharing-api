@@ -1,24 +1,22 @@
-# fly.toml app configuration file for starcat-sharing-api
+# fly.toml app configuration file generated for starcat-sharing-api on 2026-06-08T01:05:38+08:00
 #
-# 与 github-trending-api 保持一致的 fly.io 部署配置
-# 纯 [http_service] 语法 (无 [[services]] 数组, 避免 launch 注入冲突)
-# 文档: https://fly.io/docs/reference/configuration/
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
 app = 'starcat-sharing-api'
-primary_region = 'nrt'  # 东京 (离中国/日本近)
+primary_region = 'nrt'
 
 [build]
 
 [env]
-  PORT = '5001'           # 与 Dockerfile EXPOSE / main.go 默认值一致
-  STORE_FILE = '/data/data.json'  # 持久化到挂载卷, 不写镜像内
-  GOMAXPROCS = '1'        # 256MB 内存友好
   GOGC = '100'
+  GOMAXPROCS = '1'
+  PORT = '5001'
+  STORE_FILE = '/data/data.json'
 
 [processes]
-  app = './server'        # Dockerfile ENTRYPOINT 对应的二进制
+  app = './server'
 
-# 持久化卷: data.json 写入此目录, 重新部署不丢
 [[mounts]]
   source = 'starcat_sharing_data'
   destination = '/data'
@@ -36,7 +34,6 @@ primary_region = 'nrt'  # 东京 (离中国/日本近)
     hard_limit = 25
     soft_limit = 20
 
-  # 健康检查: 指向 main.go 新增的 /healthz (返回 200)
   [[http_service.checks]]
     interval = '30s'
     timeout = '5s'

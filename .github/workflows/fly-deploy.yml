@@ -1,6 +1,4 @@
 # See https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/
-# 与 github-trending-api 保持一致的部署工作流
-# 注意: FLY_API_TOKEN 需要在 GitHub 仓库 settings 中配置 (fly launch 会自动设置)
 
 name: Fly Deploy
 on:
@@ -11,7 +9,7 @@ jobs:
   deploy:
     name: Deploy app
     runs-on: ubuntu-latest
-    concurrency: deploy-group    # 同一时间只允许一个部署任务, 避免竞态
+    concurrency: deploy-group    # optional: ensure only one action runs at a time
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
