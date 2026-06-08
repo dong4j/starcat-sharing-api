@@ -390,7 +390,7 @@ fi
 # dry-run 时实际执行 (本地 worktree 切换不算 side-effect), 让 dry-run 用户也在 dev 上
 # 若 dev 缺失 (step 11.5 失败): 守卫 + warn, 不退出 (走 set -e 会让 dry-run 总结都打不出来)
 if git show-ref --verify --quiet refs/heads/dev; then
-    git checkout -b dev origin/dev
+    git checkout dev
     ok "switched to dev, ready for next release"
 else
     warn "local dev branch missing — run: git branch dev main && git checkout dev"
