@@ -13,9 +13,9 @@ import (
 
 // MemoryStore 基于内存 + JSON 文件的并发安全存储
 type MemoryStore struct {
-	mu    sync.RWMutex
-	data  map[string]model.ShareData
-	file  string
+	mu   sync.RWMutex
+	data map[string]model.ShareData
+	file string
 }
 
 // NewMemoryStore 创建新的内存存储实例
