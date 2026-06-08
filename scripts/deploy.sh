@@ -374,3 +374,17 @@ if [[ -n "$DRY_RUN" ]]; then
     echo ""
     echo "去掉 --dry-run 重跑即可真实部署"
 fi
+
+# =============================================================================
+# 14. 切回 dev, 收尾 (step 13 推 tag 之后, 作为 cleanup)
+# =============================================================================
+# deploy 脚本的目标终态: 让用户直接进入下次发版的开发循环
+# 与 step 12/13 的 side-effect 区分: 切 worktree 无副作用, 不走 run
+# dry-run 时实际执行 (本地 worktree 切换不算 side-effect), 让 dry-run 用户也在 dev 上
+# 若 dev 缺失 (step 11.5 失败): 守卫 + warn, 不退出 (走 set -e 会让 dry-run 总结都打不出来)
+if git show-ref --verify --quiet refs/heads/dev; then
+    git checkout dev
+    ok "switched to dev, ready for next release"
+else
+    warn "local dev branch missing — run: git branch dev main && git checkout dev"
+fi
