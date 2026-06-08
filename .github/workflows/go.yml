@@ -60,7 +60,7 @@ jobs:
 
       # 6. 编译检查
       - name: Build
-        run: go build -v -o starcat-sharing-api .
+        run: go build -v -o starcat-sharing-api ./cmd/server/
 
       # 7. 单元测试
       - name: Test
