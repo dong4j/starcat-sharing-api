@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# scripts/deploy.sh — starcat-weekly-api 发版脚本
+# scripts/deploy.sh — starcat-xxx-api 发版脚本
 # =============================================================================
 #
 # 用法:
@@ -33,7 +33,9 @@
 #     而不是 dev 的 tip (否则 tag 跟 main HEAD 指向不同 commit,
 #     fly-deploy 会部署到错的代码)
 #   - 不能用 --squash merge, 否则会丢失 dev 上的多个 commit 信息
-#   - dev 分支绝对不能删 (后续发版还要用)
+#   - PR merge --delete-branch 删远端 dev, step 11.5 立即从 main 重建
+#     (下次发版: git checkout dev → 改 → push → PR, 循环)
+#     若 step 11.5 失败: dev 不存在, 下次发版前手动 git branch dev main
 #   - main / master 上禁止运行此脚本 (会 PR 自己到自己)
 #
 # 失败处理: set -e + 任意一步 exit 1 都会停止, 不会留下半成品状态
@@ -121,7 +123,8 @@ run_capture() {
     if [[ -n "$DRY_RUN" ]]; then
         echo -e "${YELLOW}[DRY-RUN]${NC} $*" >&2
         # 假的 PR URL, PR 号 0 (明显是 fake), 让下游 PR_NUM=$(...|grep ...) 能跑通
-        echo "https://github.com/dong4j/starcat-weekly-api/pull/0"
+        # PROJECT_NAME 在 step 2 之后才定义, 但 run_capture 只在 step 9 才被调用, 顺序安全
+        echo "https://github.com/dong4j/${PROJECT_NAME}/pull/0"
     else
         "$@"
     fi
@@ -157,6 +160,12 @@ if [[ "$CURRENT_BRANCH" == "main" || "$CURRENT_BRANCH" == "master" ]]; then
     die "deploy.sh cannot run on '$CURRENT_BRANCH' — switch to dev or a feature branch first"
 fi
 ok "branch: $CURRENT_BRANCH (not main/master)"
+
+# 当前项目名 (从 git 仓库根目录的目录名推断)
+# 3 个 starcat-*-api 项目共用同一份 deploy.sh, 用 PROJECT_NAME 拼 URL
+# 必须放在 git 仓库校验之后, 否则 git rev-parse 会失败触发 set -e 退出
+PROJECT_NAME=$(basename "$(git rev-parse --show-toplevel)")
+ok "project: $PROJECT_NAME"
 
 # =============================================================================
 # 3. 工作区干净
@@ -282,11 +291,11 @@ PR_NUM=$(echo "$PR_URL" | grep -oE '/pull/[0-9]+$' | grep -oE '[0-9]+')
 ok "PR created: $PR_URL (PR #$PR_NUM)"
 
 # =============================================================================
-# 10. 合并 PR (--merge 保留 dev 历史, 不删 dev 分支)
+# 10. 合并 PR (--merge 保留 dev 历史, --delete-branch 删远端 dev)
 # =============================================================================
 info "merging PR #$PR_NUM..."
-run gh pr merge "$PR_NUM" --merge
-ok "PR #$PR_NUM merged"
+run gh pr merge "$PR_NUM" --merge --delete-branch
+ok "PR #$PR_NUM merged (remote dev deleted)"
 
 # =============================================================================
 # 11. 切 main, pull
@@ -295,6 +304,21 @@ info "switching to main and pulling..."
 run git checkout main
 run git pull origin main --ff-only
 ok "on main, up-to-date with origin"
+
+# =============================================================================
+# 11.5 重建 dev 分支 (PR merge --delete-branch 后, 从 main 重建推 origin)
+# =============================================================================
+# 远端 dev 已被 step 10 删, 重建 dev 指向 main HEAD 保证下次发版有 dev 可用
+# 本地 dev ref 仍存在 (git fetch --prune 才会清), -D 强删 (step 4 已校验无未推送)
+# 若 step 11.5 整体失败: dev 不存在, 下次发版前手动 git branch dev main 恢复
+if git show-ref --verify --quiet refs/heads/dev; then
+    info "removing stale local dev ref..."
+    run git branch -D dev
+fi
+info "rebuilding dev branch from main..."
+run git branch dev main
+run git push origin dev
+ok "dev branch rebuilt on origin (https://github.com/dong4j/${PROJECT_NAME}/tree/dev)"
 
 # =============================================================================
 # 12. 打 annotated tag (指向 merge commit)
@@ -323,9 +347,9 @@ echo -e "${GREEN}  $VERSION 部署完成 ✓${NC}"
 echo -e "${GREEN}=========================================${NC}"
 echo ""
 echo "  - PR:      $PR_URL"
-echo "  - Tag:     https://github.com/dong4j/starcat-weekly-api/releases/tag/$VERSION"
-echo "  - Fly:     https://fly.io/apps/starcat-weekly-api"
-echo "  - Action:  https://github.com/dong4j/starcat-weekly-api/actions/workflows/fly-deploy.yml"
+echo "  - Tag:     https://github.com/dong4j/${PROJECT_NAME}/releases/tag/$VERSION"
+echo "  - Fly:     https://fly.io/apps/${PROJECT_NAME}/healthz"
+echo "  - Action:  https://github.com/dong4j/${PROJECT_NAME}/actions/workflows/fly-deploy.yml"
 echo ""
 echo "  下一步: 等待 fly-deploy workflow 完成 (通常 < 2 分钟)"
 
