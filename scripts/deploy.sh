@@ -26,7 +26,8 @@
 #  10. 合并 PR (--merge, 保留 dev 历史, 不删 dev 分支)
 #  11. checkout main, pull
 #  12. 打 annotated tag v1.1.0 (指向 merge commit)
-#  13. 推送 tag → 触发 .github/workflows/fly-deploy.yml
+#  13. 推送 tag → 触发 .github/workflows/{go,fly-deploy,release}.yml
+#     (go.yml 必跑在前, 成功后 fly-deploy + release 并行跑)
 #
 # 关键约束 (踩过的坑):
 #   - tag 必须在 PR merge 之后打, 确保 tag 指向 main 的 merge commit,
@@ -37,6 +38,8 @@
 #     (下次发版: git checkout dev → 改 → push → PR, 循环)
 #     若 step 11.5 失败: dev 不存在, 下次发版前手动 git branch dev main
 #   - main / master 上禁止运行此脚本 (会 PR 自己到自己)
+#   - 推 tag 后必须等 go.yml 跑完才会触发 fly-deploy/release
+#     (workflow_run 监听, 失败时不会部署, 必须先修代码重打 tag)
 #
 # 失败处理: set -e + 任意一步 exit 1 都会停止, 不会留下半成品状态
 # (已创建的 PR 不会自动关, 需要手动去 GitHub 处理或 gh pr close)
@@ -332,9 +335,13 @@ run git tag -a "$VERSION" -m "Release $VERSION
 ok "tagged $VERSION"
 
 # =============================================================================
-# 13. 推送 tag → 触发 fly-deploy
+# 13. 推送 tag → 触发 .github/workflows/{go,fly-deploy,release}.yml
 # =============================================================================
-info "pushing tag $VERSION to origin (triggers fly-deploy)..."
+# 推 tag 后:
+#   - go.yml 先跑 (gofmt + vet + build + test 验证)
+#   - go.yml 成功 → fly-deploy.yml 部署 + release.yml 发版 (并行)
+#   - go.yml 失败 → fly-deploy + release 都不跑 (workflow_run 监听)
+info "pushing tag $VERSION to origin (triggers go.yml → fly-deploy + release)..."
 run git push origin "$VERSION"
 ok "tag $VERSION pushed"
 
@@ -349,9 +356,9 @@ echo ""
 echo "  - PR:      $PR_URL"
 echo "  - Tag:     https://github.com/dong4j/${PROJECT_NAME}/releases/tag/$VERSION"
 echo "  - Fly:     https://fly.io/apps/${PROJECT_NAME}/healthz"
-echo "  - Action:  https://github.com/dong4j/${PROJECT_NAME}/actions/workflows/fly-deploy.yml"
+echo "  - Actions: https://github.com/dong4j/${PROJECT_NAME}/actions"
 echo ""
-echo "  下一步: 等待 fly-deploy workflow 完成 (通常 < 2 分钟)"
+echo "  下一步: 等待 go.yml → fly-deploy + release 跑完 (通常 < 3 分钟)"
 
 # =============================================================================
 # 干跑模式总结
@@ -383,7 +390,7 @@ fi
 # dry-run 时实际执行 (本地 worktree 切换不算 side-effect), 让 dry-run 用户也在 dev 上
 # 若 dev 缺失 (step 11.5 失败): 守卫 + warn, 不退出 (走 set -e 会让 dry-run 总结都打不出来)
 if git show-ref --verify --quiet refs/heads/dev; then
-    git checkout dev
+    git checkout -b dev origin/dev
     ok "switched to dev, ready for next release"
 else
     warn "local dev branch missing — run: git branch dev main && git checkout dev"
