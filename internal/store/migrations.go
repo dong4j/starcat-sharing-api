@@ -5,6 +5,7 @@ package store
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 )
 
@@ -27,10 +28,15 @@ func migrate(db *sql.DB) error {
 }
 
 // setUserVersion 在事务内更新 schema 版本号。
-// 必须接 *sql.Tx 而不是 *sql.DB，否则 setUserVersion 与 migrateV1 的 DDL
+//
+// 关键约束 1:必须接 *sql.Tx 而不是 *sql.DB，否则 setUserVersion 与 migrateV1 的 DDL
 // 不在同一事务，rollback 时会留下「DDL 已撤但 user_version 已升」的不一致状态。
+//
+// 关键约束 2:SQLite 的 PRAGMA 语句不支持 ? 占位符绑定(database/sql 走 prepared
+// statement 路径会直接报 `near "?": syntax error`)。所以必须用 fmt.Sprintf
+// 把 version(int,无注入风险)拼进 SQL。参考 starcat-trending-api 同位置写法。
 func setUserVersion(tx *sql.Tx, version int) error {
-	_, err := tx.Exec("PRAGMA user_version = ?", version)
+	_, err := tx.Exec(fmt.Sprintf("PRAGMA user_version = %d", version))
 	return err
 }
 
