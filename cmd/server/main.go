@@ -77,6 +77,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", healthzHandler)
 	mux.HandleFunc("GET /s/{id}", shareHandler.HandleRenderShare)
+	// R-03 (2026-06-11): /api/v1/ping 专门给 Starcat 客户端「测试连接」按钮用，
+	// 在 middleware 后面挂——同时验证服务可达 + Bearer Key 正确。详见 handler/ping.go。
+	mux.Handle("GET /api/v1/ping", authMW.Wrap(handler.HandlePingV1("sharing")))
 	mux.Handle("POST /api/v1/share", authMW.Wrap(http.HandlerFunc(shareHandler.HandleCreateShareV1)))
 
 	// 优雅关闭
@@ -91,6 +94,7 @@ func main() {
 
 	log.Printf("starcat-sharing-api starting on port %s", port)
 	log.Printf("Endpoints:")
+	log.Printf("  GET  /api/v1/ping   - Connectivity probe for Starcat client (auth required)")
 	log.Printf("  POST /api/v1/share  - Create share link (auth required)")
 	log.Printf("  GET  /s/{id}        - View share page (public)")
 	log.Printf("  GET  /healthz       - Health check (public)")
