@@ -1,36 +1,21 @@
 <!--
-  Starcat Share Card Template — Hard Pixel / Geek
-  ---------------------------------------------------------------------
-  模块说明：
-  Go html/template 渲染公开 /s/{id} 分享页。视觉来自 docs/demos/share-soft-geek.html
-  （dong4j 2026-08-05 评审定稿）。
+  Starcat AI Share — Hard Pixel Demo (v3)
+  ------------------------------------------------------------------
+  数据来源：线上 https://starcat.ink/s/J7v0Ryv6 的真实 ShareData
+  （ShareRepoDTO + ShareAISummaryDTO），不编造 strengths/risks。
 
-  设计约束：
-  1. 可截图转发的内容卡片，不是 AI 落地页。
-  2. 用户可见文案避免「AI 摘要 / 智能分析」包装感。
-  3. ShareData / API JSON 契约保持兼容；新增可选 repo.subscribers_count（WATCH）。
-  4. summary Markdown 由 marked.js + DOMPurify 拆卡渲染；one_liner 同样走 Markdown。
-  5. ExpiresAt 零值 = 永不过期，模板用 not .ExpiresAt.IsZero 判断。
+  本条样例 strengths/risks 数组为空；卡片由 summary Markdown 的 ## 章节
+  按正式模板 share.html 同一套 splitMarkdownSections / sectionKind 生成。
+
+  repo logo：契约暂无 avatar 字段，demo 用 GitHub owner 头像约定
+  https://github.com/{owner}.png（正式接入时可改 DTO 或服务端补全）。
 -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ .Request.Repo.FullName }} · Starcat</title>
-
-    {{ if .Request.AISummary.OneLiner }}
-    <meta name="description" content="{{ .Request.AISummary.OneLiner }}">
-    <meta property="og:description" content="{{ .Request.AISummary.OneLiner }}">
-    <meta name="twitter:description" content="{{ .Request.AISummary.OneLiner }}">
-    {{ end }}
-    <meta property="og:type" content="article">
-    <meta property="og:title" content="{{ .Request.Repo.FullName }} · Starcat">
-    <meta property="og:site_name" content="Starcat">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ .Request.Repo.FullName }} · Starcat">
-    <meta name="theme-color" content="#070b10">
-    <link rel="icon" type="image/png" href="/r/starcat-logo.png">
+  <title>DEMO · Hard Pixel Share · Starcat</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=Press+Start+2P&amp;display=swap" rel="stylesheet">
@@ -104,6 +89,27 @@
       z-index: 1;
     }
 
+    .demo-banner {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border: 3px solid var(--warn);
+      background: repeating-linear-gradient(-45deg, rgba(255,216,77,.12) 0 6px, rgba(255,216,77,.04) 6px 12px);
+      box-shadow: var(--shadow-sm);
+      color: var(--warn);
+      font-family: var(--pixel);
+      font-size: 8px;
+      line-height: 1.7;
+    }
+    .demo-banner span:last-child {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+    }
 
     .topbar {
       display: flex;
@@ -659,13 +665,17 @@
 </head>
 <body>
   <main class="page">
+    <div class="demo-banner" role="note">
+      <span>DEMO V3 · HARD PIXEL · REAL DATA</span>
+      <span>字段对齐 /s/J7v0Ryv6 · strengths/risks=[] · 卡片来自 summary ##</span>
+    </div>
 
     <nav class="topbar" aria-label="分享页信息">
       <a class="brand" href="https://starcat.ink/" target="_blank" rel="noopener">
         <span class="brand-mark" aria-hidden="true">S</span>
         <span class="brand-name">STARCAT</span>
       </a>
-      <span class="share-date">{{ .CreatedAt.Format "2006.01.02" }}</span>
+      <span class="share-date">2026.08.04</span>
     </nav>
 
     <article class="sheet">
@@ -680,148 +690,177 @@
 
       <header class="hero">
         <section class="hero-main">
-                    <div class="kicker-row">
-            {{ if .Request.Repo.Language }}
-            <span class="chip language">{{ .Request.Repo.Language }}</span>
-            {{ end }}
-            {{ if not .ExpiresAt.IsZero }}
-            <span class="chip">expires {{ .ExpiresAt.Format "2006.01.02" }}</span>
-            {{ else }}
+          <div class="kicker-row">
+            <span class="chip language">Go</span>
+            <!-- ExpiresAt 零值 / null → 永不过期，不渲染 0001-01-01 -->
             <span class="chip">never expires</span>
-            {{ end }}
           </div>
 
-                    <div class="title-row">
+          <div class="title-row">
+            <!-- ShareRepoDTO 暂无 avatar；demo 用 GitHub owner.png 约定 -->
             <img
               class="repo-logo"
-              src="https://github.com/{{ repoOwner .Request.Repo.FullName }}.png?size=128"
+              src="https://github.com/starcat-app.png?size=128"
               width="56"
               height="56"
-              alt="{{ repoOwner .Request.Repo.FullName }}"
+              alt="starcat-app"
             >
             <div class="title-text">
-              <p class="repo-path"><span class="prompt">$</span>{{ repoOwner .Request.Repo.FullName }}/<span class="blink" aria-hidden="true"></span></p>
-              <h1 title="{{ repoName .Request.Repo.FullName }}">{{ repoName .Request.Repo.FullName }}</h1>
+              <p class="repo-path"><span class="prompt">$</span>starcat-app/<span class="blink" aria-hidden="true"></span></p>
+              <h1 title="starcat-recommend-api">starcat-recommend-api</h1>
             </div>
           </div>
 
-          {{ if .Request.Repo.Description }}
-          <p class="description">{{ .Request.Repo.Description }}</p>
-          {{ end }}
+          <p class="description">Self-hostable backend for Starcat similar-repository recommendations.</p>
 
-                    {{ if .Request.AISummary.OneLiner }}
           <div class="summary-strip">
             <span class="summary-label">◆ ONE_LINER</span>
-            <template id="one-liner-source">{{ .Request.AISummary.OneLiner }}</template>
+            <!-- 原文带 Markdown；DOMContentLoaded 后用 marked + DOMPurify 渲染 -->
+            <template id="one-liner-source">**starcat-recommend-api** 是 Starcat（一款原生 macOS 应用，用于将 GitHub Star 转化为可搜索、可组织的 AI 知识库）的相似仓库推荐后端 API。本服务属于 Starcat 生态中可自托管的支持 API 之一，为 Starcat 客户端提供稳定的 `/api/v1/repos/{repo_id}/recommendations` 接口。首版通过服务端中转 SimRepo 的非官方 Qdrant Recommend API 实现推荐能力，客户端不直连 SimRepo，也不持有其 API Key。未来可在本服务内替换为自研推荐 Provider。</template>
             <div id="one-liner-body" class="summary-body card-body"></div>
           </div>
-          {{ end }}
         </section>
 
-                <aside class="hero-side" aria-label="仓库操作">
+        <aside class="hero-side" aria-label="仓库操作">
           <!--
-            STARS/FORKS：ShareRepoDTO.stars_count / forks_count
-            WATCH：ShareRepoDTO.subscribers_count（GitHub 真实 watch；旧分享缺省为 0）
-            进度条由 JS 按三者最大值归一化。
+            STARS/FORKS：来自分享样例 ShareRepoDTO（2 / 0）。
+            WATCH：当前 ShareRepoDTO 无此字段；demo 用 GitHub subscribers_count=0
+            （勿用 watchers_count，GitHub 里那是 stars 历史别名）。
+            进度条相对三者最大值归一化（max=2）。
           -->
-          <div class="metric-grid" id="metric-grid"
-               data-stars="{{ .Request.Repo.StarsCount }}"
-               data-forks="{{ .Request.Repo.ForksCount }}"
-               data-watch="{{ .Request.Repo.SubscribersCount }}">
-            <div class="metric" data-metric="stars">
-              <span class="metric-value">{{ .Request.Repo.StarsCount }}</span>
+          <div class="metric-grid">
+            <div class="metric" style="--fill: 100%">
+              <span class="metric-value">2</span>
               <span class="metric-bar" aria-hidden="true"><i></i></span>
               <span class="metric-label">[ STARS ]</span>
             </div>
-            <div class="metric" data-metric="forks">
-              <span class="metric-value">{{ .Request.Repo.ForksCount }}</span>
+            <div class="metric" style="--fill: 0%">
+              <span class="metric-value">0</span>
               <span class="metric-bar" aria-hidden="true"><i></i></span>
               <span class="metric-label">[ FORKS ]</span>
             </div>
-            <div class="metric" data-metric="watch">
-              <span class="metric-value">{{ .Request.Repo.SubscribersCount }}</span>
+            <div class="metric" style="--fill: 0%">
+              <span class="metric-value">0</span>
               <span class="metric-bar" aria-hidden="true"><i></i></span>
               <span class="metric-label">[ WATCH ]</span>
             </div>
           </div>
           <div class="actions">
-            <a class="button primary" href="{{ .Request.Repo.URL }}" target="_blank" rel="noopener noreferrer">VIEW REPO</a>
-            {{ if .Request.Repo.Homepage }}
-            <a class="button" href="{{ .Request.Repo.Homepage }}" target="_blank" rel="noopener noreferrer">HOMEPAGE</a>
-            {{ end }}
+            <a class="button primary" href="https://github.com/starcat-app/starcat-recommend-api" target="_blank" rel="noopener noreferrer">VIEW REPO</a>
+            <a class="button" href="https://starcat.ink" target="_blank" rel="noopener noreferrer">HOMEPAGE</a>
             <button class="button" type="button" onclick="copyShareUrl()"><span id="copyText">COPY LINK</span></button>
           </div>
         </aside>
       </header>
 
-            <section class="cards-section" aria-label="分享卡片">
-        <template id="summary-source">{{ .Request.AISummary.Summary }}</template>
+      <section class="cards-section" aria-label="分享卡片">
+        <!-- 与正式模板一致：summary 原文放 template，JS 按 ## 拆卡 -->
+        <template id="summary-source">## 概述
+
+**starcat-recommend-api** 是 Starcat（一款原生 macOS 应用，用于将 GitHub Star 转化为可搜索、可组织的 AI 知识库）的相似仓库推荐后端 API。本服务属于 Starcat 生态中可自托管的支持 API 之一，为 Starcat 客户端提供稳定的 `/api/v1/repos/{repo_id}/recommendations` 接口。首版通过服务端中转 SimRepo 的非官方 Qdrant Recommend API 实现推荐能力，客户端不直连 SimRepo，也不持有其 API Key。未来可在本服务内替换为自研推荐 Provider。
+
+## 核心能力
+
+- **相似仓库推荐**：根据仓库 ID（repo_id）返回相似仓库列表，支持分页参数（limit / offset）。
+- **服务端鉴权**：客户端通过 Bearer Token 访问业务接口，API Key 配置在服务端环境变量中。
+- **进程内缓存**：内置多层 TTL 缓存，成功结果默认缓存 7 天，空结果缓存 6 小时，错误结果缓存 10 分钟，减少对上游 SimRepo 的依赖。
+- **可观测端点**：提供 `/healthz`（公开）和 `/api/v1/ping`（需鉴权）用于健康检查和连接探测。
+- **Provider 边界**：当前 Provider 链为 `RecommendHandler -&gt; CachedProvider -&gt; SimRepoProvider -&gt; SimRepo Qdrant API`，未来可基于稳定响应 DTO 实现替换（如内容嵌入推荐、行为推荐、混合推荐）。
+- **一键部署**：提供 Dockerfile、Fly.io 和 Render 部署文档。
+
+## 使用场景
+
+- **Starcat 用户**：希望拥有稳定的、非官方的相似仓库推荐能力，且不信任或不想直接使用 SimRepo 的 API Key。
+- **高级用户 / 开发者**：希望自托管该 API，对推荐数据进行缓存或未来替换为自研推荐引擎。
+- **Starcat 生态集成**：作为 Starcat 后端微服务体系的一部分，与其他 API（如 sharing-api、trending-api）协同工作。
+
+## 技术生态
+
+- **语言**：Go
+- **运行时**：标准 Go net/http（无第三方 Web 框架）
+- **依赖管理**：Go Modules
+- **上游依赖**：SimRepo（基于 Qdrant 的非官方推荐 API）
+- **部署**：Docker / Docker Compose / Fly.io / Render（提供文档）
+- **CI/测试**：Go test、race detection、vet、覆盖率报告
+
+## 优势
+
+- **自托管灵活**：用户可自行部署，不依赖 Starcat 官方托管实例，代码和配置完全透明。
+- **缓存层设计**：引入多层 TTL 缓存，显著降低对上游 SimRepo 的请求频率，提高响应速度和服务稳定性。
+- **未来可替换**：通过清晰的 Provider 接口和约定，可方便地替换推荐算法提供商，而不影响客户端接口契约。
+- **轻量无依赖**：仅使用 Go 标准库和少量第三方库，无复杂框架或外部中间件，部署和运维成本低。
+- **完整生态文档**：提供部署、开发、测试、环境配置文档，符合 Starcat 后端 API 的统一规范。
+
+## 风险与限制
+
+- **依赖第三方服务**：当前推荐能力依赖 SimRepo 的 Qdrant API，若该服务不可用或被限制，推荐功能将失效。
+- **社区活跃度低**：仓库仅有 1 个 Star，目前暂无社区贡献记录，维护和迭代可能存在不确定性。
+- **文档相对简洁**：虽然提供了基本文档，但在 Provider 开发指南、缓存失效策略、错误处理等方面缺乏深入说明。
+- **鉴权简单**：仅支持 Bearer Token 鉴权，未提供更细粒度的用户或权限管理机制。
+
+## 最小示例
+
+本地开发和测试流程：
+
+```bash
+# 克隆仓库并进入目录
+git clone https://github.com/dong4j/starcat-recommend-api.git
+cd starcat-recommend-api
+
+# 安装依赖并启动
+go mod tidy
+cp .env.example .env
+# 编辑 .env，填入 API_KEYS 和 SIMREPO_API_KEY
+go run ./cmd/server
+
+# 健康检查（无需鉴权）
+curl http://127.0.0.1:5005/healthz
+
+# 连接探测（需鉴权）
+curl -H "Authorization: Bearer your-api-key" http://127.0.0.1:5005/api/v1/ping
+
+# 获取相似仓库推荐（需鉴权）
+curl -H "Authorization: Bearer your-api-key" \
+  "http://127.0.0.1:5005/api/v1/repos/41881900/recommendations?limit=10&amp;offset=0"
+```
+
+## 外部参考来源
+- [docs.stardeck.ai](https://docs.stardeck.ai/starcat)
+- [apkpure.com](https://apkpure.com/tw/similar/anonymousme.gitstar)
+- [deepwiki.com](https://deepwiki.com/immunogenomics/starCAT/7-api-reference)
+- [zhuanlan.zhihu.com](https://zhuanlan.zhihu.com/p/351941717)
+- [zhuanlan.zhihu.com](https://zhuanlan.zhihu.com/p/1912074461739455771)
+- [longcat.chat](https://longcat.chat/platform/docs/ChangeLog.html)</template>
 
         <div id="generated-cards" class="card-grid">
           <span id="card-anchor" hidden></span>
 
-          {{ if .Request.AISummary.Strengths }}
-          <article class="content-card array-card good">
-            <span class="card-label">highlights</span>
-            <h2>亮点</h2>
-            <ul>
-              {{ range .Request.AISummary.Strengths }}
-              <li>{{ . }}</li>
-              {{ end }}
-            </ul>
-          </article>
-          {{ end }}
+          <!--
+            本样例 AISummary.strengths / risks / suitable_for / platforms 均为空，
+            因此不渲染对应静态 array-card（对齐线上 HTML：good cards = 0）。
+          -->
 
-          {{ if .Request.AISummary.Risks }}
-          <article class="content-card array-card risk">
-            <span class="card-label">watch</span>
-            <h2>注意点</h2>
-            <ul>
-              {{ range .Request.AISummary.Risks }}
-              <li>{{ . }}</li>
-              {{ end }}
-            </ul>
-          </article>
-          {{ end }}
-
-          {{ if .Request.AISummary.SuitableFor }}
-          <article class="content-card array-card">
-            <span class="card-label">use cases</span>
-            <h2>适合场景</h2>
-            <ul>
-              {{ range .Request.AISummary.SuitableFor }}
-              <li>{{ . }}</li>
-              {{ end }}
-            </ul>
-          </article>
-          {{ end }}
-
-          {{ if .Request.AISummary.Platforms }}
-          <article class="content-card">
-            <span class="card-label">platform</span>
-            <h2>平台</h2>
-            <div class="tag-cloud">
-              {{ range .Request.AISummary.Platforms }}
-              <span class="tag">{{ . }}</span>
-              {{ end }}
-            </div>
-          </article>
-          {{ end }}
-
-          {{ if or .Request.Repo.Topics .Request.AISummary.SuggestedTags }}
           <article class="content-card full">
             <span class="card-label">tags</span>
             <h2>标签</h2>
             <div class="tag-cloud">
-              {{ range .Request.Repo.Topics }}
-              <span class="tag">{{ . }}</span>
-              {{ end }}
-              {{ range .Request.AISummary.SuggestedTags }}
-              <span class="tag suggested"{{ with .Confidence }} title="confidence {{ printf "%.2f" . }}"{{ end }}>{{ .Name }}</span>
-              {{ end }}
+              <span class="tag">api</span>
+              <span class="tag">github</span>
+              <span class="tag">golang</span>
+              <span class="tag">recommendation-system</span>
+              <span class="tag">self-hosted</span>
+              <span class="tag">sqlite</span>
+              <span class="tag">starcat</span>
+              <span class="tag suggested">Go</span>
+              <span class="tag suggested">API</span>
+              <span class="tag suggested">仓库推荐</span>
+              <span class="tag suggested">Qdrant</span>
+              <span class="tag suggested">后端</span>
+              <span class="tag suggested">缓存</span>
+              <span class="tag suggested">Starcat</span>
+              <span class="tag suggested">自部署</span>
             </div>
           </article>
-          {{ end }}
 
           <article id="fallback-report" class="content-card fallback-report">
             <span class="card-label">notes</span>
@@ -832,13 +871,9 @@
       </section>
     </article>
 
-        <footer class="footer">
-      <span>generated by <a href="/">starcat</a> · open-source project card</span>
-      {{ if not .ExpiresAt.IsZero }}
-      <span>expires {{ .ExpiresAt.Format "2006.01.02" }}</span>
-      {{ else }}
+    <footer class="footer">
+      <span>generated by <a href="https://starcat.ink/">starcat</a> · pixel card v3 · real payload</span>
       <span>link never expires</span>
-      {{ end }}
     </footer>
   </main>
 
@@ -974,7 +1009,7 @@
       const text = document.getElementById('copyText');
       const previous = text.textContent;
       try {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText('https://starcat.ink/s/J7v0Ryv6');
         text.textContent = 'COPIED!';
       } catch (error) {
         text.textContent = 'FAILED';
@@ -982,25 +1017,7 @@
       setTimeout(() => { text.textContent = previous; }, 1500);
     }
 
-
-    function applyMetricBars() {
-      const grid = document.getElementById('metric-grid');
-      if (!grid) return;
-      const stars = Number(grid.dataset.stars || 0);
-      const forks = Number(grid.dataset.forks || 0);
-      const watch = Number(grid.dataset.watch || 0);
-      const max = Math.max(stars, forks, watch, 1);
-      grid.querySelectorAll('.metric').forEach((el) => {
-        const key = el.dataset.metric;
-        const value = key === 'stars' ? stars : key === 'forks' ? forks : watch;
-        el.style.setProperty('--fill', `${Math.round((value / max) * 100)}%`);
-      });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      applyMetricBars();
-      renderCards();
-    });
+    document.addEventListener('DOMContentLoaded', renderCards);
   </script>
 </body>
 </html>

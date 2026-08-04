@@ -32,7 +32,27 @@ func (fakeOGRenderer) Render(model.RepositoryPreview, image.Image) ([]byte, erro
 
 func newRepositoryTestHandler(t *testing.T, source fakeRepositorySource) *RepositoryHandler {
 	t.Helper()
-	templates, err := template.ParseGlob("../../templates/*.html")
+	templates, err := template.New("").Funcs(template.FuncMap{
+		"repoOwner": func(fullName string) string {
+			for i := 0; i < len(fullName); i++ {
+				if fullName[i] == '/' {
+					return fullName[:i]
+				}
+			}
+			return fullName
+		},
+		"repoName": func(fullName string) string {
+			for i := 0; i < len(fullName); i++ {
+				if fullName[i] == '/' {
+					if i+1 < len(fullName) {
+						return fullName[i+1:]
+					}
+					return ""
+				}
+			}
+			return fullName
+		},
+	}).ParseGlob("../../templates/*.html")
 	if err != nil {
 		t.Fatalf("parse templates: %v", err)
 	}
