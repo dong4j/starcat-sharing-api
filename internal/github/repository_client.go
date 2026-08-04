@@ -27,20 +27,21 @@ var (
 )
 
 type repositoryResponse struct {
-	ID              int64     `json:"id"`
-	Name            string    `json:"name"`
-	FullName        string    `json:"full_name"`
-	Description     *string   `json:"description"`
-	StargazersCount int       `json:"stargazers_count"`
-	ForksCount      int       `json:"forks_count"`
-	Language        *string   `json:"language"`
-	Topics          []string  `json:"topics"`
-	HTMLURL         string    `json:"html_url"`
-	DefaultBranch   string    `json:"default_branch"`
-	Archived        bool      `json:"archived"`
-	IsTemplate      bool      `json:"is_template"`
-	UpdatedAt       time.Time `json:"updated_at"`
-	Owner           struct {
+	ID               int64     `json:"id"`
+	Name             string    `json:"name"`
+	FullName         string    `json:"full_name"`
+	Description      *string   `json:"description"`
+	StargazersCount  int       `json:"stargazers_count"`
+	ForksCount       int       `json:"forks_count"`
+	SubscribersCount int       `json:"subscribers_count"`
+	Language         *string   `json:"language"`
+	Topics           []string  `json:"topics"`
+	HTMLURL          string    `json:"html_url"`
+	DefaultBranch    string    `json:"default_branch"`
+	Archived         bool      `json:"archived"`
+	IsTemplate       bool      `json:"is_template"`
+	UpdatedAt        time.Time `json:"updated_at"`
+	Owner            struct {
 		Login     string `json:"login"`
 		AvatarURL string `json:"avatar_url"`
 	} `json:"owner"`
@@ -172,6 +173,7 @@ func makePreview(payload repositoryResponse) model.RepositoryPreview {
 		Language:      language,
 		Stars:         payload.StargazersCount,
 		Forks:         payload.ForksCount,
+		Subscribers:   payload.SubscribersCount,
 		Topics:        payload.Topics,
 		AvatarURL:     payload.Owner.AvatarURL,
 		HTMLURL:       payload.HTMLURL,
