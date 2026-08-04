@@ -31,11 +31,13 @@
     <meta name="twitter:title" content="{{ .Request.Repo.FullName }} · Starcat">
     <meta name="theme-color" content="#070b10">
     <link rel="icon" type="image/png" href="/r/starcat-logo.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&amp;family=Press+Start+2P&amp;display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js" defer></script>
+  <!--
+    starcat.ink 反代 CSP：
+    - script-src 仅放行 unpkg.com / cdn.dong4j.site（jsdelivr 会被拦 → ONE_LINER/卡片空白）
+    - style-src / font-src 不放行 fonts.googleapis / unpkg CSS，故不用外链字体，靠系统等宽兜底
+  -->
+  <script src="https://unpkg.com/marked@12.0.2/marked.min.js" defer></script>
+  <script src="https://unpkg.com/dompurify@3.2.4/dist/purify.min.js" defer></script>
   <style>
     :root {
       color-scheme: dark;
@@ -712,8 +714,9 @@
                     {{ if .Request.AISummary.OneLiner }}
           <div class="summary-strip">
             <span class="summary-label">◆ ONE_LINER</span>
+            <!-- source 给 JS 做 Markdown；body 先灌纯文本，CDN/CSP 失败时仍可见 -->
             <template id="one-liner-source">{{ .Request.AISummary.OneLiner }}</template>
-            <div id="one-liner-body" class="summary-body card-body"></div>
+            <div id="one-liner-body" class="summary-body card-body">{{ .Request.AISummary.OneLiner }}</div>
           </div>
           {{ end }}
         </section>
@@ -898,35 +901,64 @@
 
     function renderMarkdown(markdown) {
       if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') return null;
-      marked.setOptions({ gfm: true, breaks: false, mangle: false, headerIds: false });
+      // marked@12 已移除 mangle/headerIds；勿再 set，旧选项会干扰解析
+      if (typeof marked.setOptions === 'function') {
+        marked.setOptions({ gfm: true, breaks: false });
+      }
       return DOMPurify.sanitize(marked.parse(markdown), { USE_PROFILES: { html: true } });
     }
 
-    function renderOneLiner() {
-      const source = document.getElementById('one-liner-source');
-      const body = document.getElementById('one-liner-body');
-      if (!source || !body) return;
-      const raw = (source.content || source).textContent.trim();
-      body.innerHTML = renderMarkdown(raw) || raw;
+    function templateText(id) {
+      const source = document.getElementById(id);
+      if (!source) return '';
+      return (source.content || source).textContent.trim();
     }
 
-    function renderCards() {
-      if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') {
-        return setTimeout(renderCards, 50);
-      }
-      renderOneLiner();
+    function renderOneLiner() {
+      const body = document.getElementById('one-liner-body');
+      if (!body) return;
+      const raw = templateText('one-liner-source');
+      if (!raw) return;
+      const html = renderMarkdown(raw);
+      if (html) body.innerHTML = html;
+      // 无 marked 时保留服务端灌入的纯文本，避免空白
+    }
 
-      const source = document.getElementById('summary-source');
-      const grid = document.getElementById('generated-cards');
-      const anchor = document.getElementById('card-anchor');
+    function showSummaryFallback(raw) {
       const fallback = document.getElementById('fallback-report');
       const fallbackBody = document.getElementById('fallback-body');
-      if (!source || !grid) return;
+      if (!fallback || !fallbackBody) return;
+      fallback.style.display = 'block';
+      const html = renderMarkdown(raw);
+      if (html) {
+        fallbackBody.innerHTML = html;
+      } else {
+        fallbackBody.textContent = raw || '这张卡片暂时只有仓库基础信息。';
+      }
+    }
 
-      const raw = (source.content || source).textContent.trim();
+    function renderCards(attempt) {
+      const tries = typeof attempt === 'number' ? attempt : 0;
+      const libsReady = typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined';
+      // CSP/CDN 失败时最多等 ~2s，然后用纯文本兜底，避免永久空白
+      if (!libsReady && tries < 40) {
+        return setTimeout(() => renderCards(tries + 1), 50);
+      }
+
+      renderOneLiner();
+
+      const grid = document.getElementById('generated-cards');
+      const anchor = document.getElementById('card-anchor');
+      if (!grid) return;
+
+      const raw = templateText('summary-source');
       if (!raw) {
-        if (fallback) fallback.style.display = 'block';
-        if (fallbackBody) fallbackBody.textContent = '这张卡片暂时只有仓库基础信息。';
+        showSummaryFallback('');
+        return;
+      }
+
+      if (!libsReady) {
+        showSummaryFallback(raw);
         return;
       }
 
@@ -935,10 +967,7 @@
         .filter((section) => !/^一句话总结$/.test(section.title));
 
       if (!sections.length) {
-        if (fallback && fallbackBody) {
-          fallback.style.display = 'block';
-          fallbackBody.innerHTML = renderMarkdown(raw) || raw;
-        }
+        showSummaryFallback(raw);
         return;
       }
 
