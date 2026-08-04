@@ -68,9 +68,12 @@ func main() {
 	}
 	defer sqliteStore.Close()
 
-	// 加载 HTML 模板
+	// 加载 HTML 模板（repoOwner / repoName 供 Hard Pixel 分享页拆 owner/repo）
 	var templates *template.Template
-	if tmpl, err := template.ParseGlob("templates/*.html"); err != nil {
+	if tmpl, err := template.New("").Funcs(template.FuncMap{
+		"repoOwner": repoOwner,
+		"repoName":  repoName,
+	}).ParseGlob("templates/*.html"); err != nil {
 		log.Fatalf("Failed to parse templates: %v", err)
 	} else {
 		templates = tmpl
@@ -146,4 +149,20 @@ func starcatLogoHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("Cache-Control", "public, max-age=604800, immutable")
 	w.Write(render.StarcatLogoPNG())
+}
+
+// repoOwner 从 "owner/name" 取出 owner，供分享页模板使用。
+func repoOwner(fullName string) string {
+	if i := strings.IndexByte(fullName, '/'); i > 0 {
+		return fullName[:i]
+	}
+	return fullName
+}
+
+// repoName 从 "owner/name" 取出 repo name，供分享页模板使用。
+func repoName(fullName string) string {
+	if i := strings.IndexByte(fullName, '/'); i >= 0 && i+1 < len(fullName) {
+		return fullName[i+1:]
+	}
+	return fullName
 }

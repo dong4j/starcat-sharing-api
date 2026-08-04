@@ -23,9 +23,12 @@ type ShareRepoDTO struct {
 	Language    *string  `json:"language"`
 	StarsCount  int      `json:"stars_count"`
 	ForksCount  int      `json:"forks_count"`
-	Topics      []string `json:"topics"`
-	Homepage    *string  `json:"homepage"`
-	URL         string   `json:"url"`
+	// SubscribersCount 是 GitHub 真实 Watch 数（subscribers_count）。
+	// 旧分享记录缺省为 0；勿与 list API 的 watchers_count（常等于 stars）混淆。
+	SubscribersCount int      `json:"subscribers_count"`
+	Topics           []string `json:"topics"`
+	Homepage         *string  `json:"homepage"`
+	URL              string   `json:"url"`
 }
 
 // ShareTagDTO AI 推荐的标签 DTO

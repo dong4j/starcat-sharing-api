@@ -7,6 +7,11 @@
 
 ## [Unreleased]
 
+### Changed
+- **AI 分享页 Hard Pixel 视觉（2026-08-05）**：`/s/{id}` 模板重做为暗色像素/极客风（与 `docs/demos/share-soft-geek.html` 定稿一致）。
+  - 修 `ExpiresAt` 零值误显示 `0001-01-01`；`one_liner` / summary 走 Markdown 渲染。
+  - 指标区 STARS / FORKS / WATCH；契约新增可选 `repo.subscribers_count`（旧记录缺省 0）。
+
 ### Added
 - **Canonical repository sharing (2026-07-21)**：新增公开 `/r/{owner}/{repo}` 服务端落地页和 `/og/repo/{owner}/{repo}.png` 动态 Open Graph 卡片。
   - 复用 quota-aware `GITHUB_TOKENS` pool，并增加有界 TTL cache 与并发请求合并。
