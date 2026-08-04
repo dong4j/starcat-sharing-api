@@ -18,11 +18,11 @@ import "time"
 
 // ShareRepoDTO 仓库基本信息 DTO
 type ShareRepoDTO struct {
-	FullName    string   `json:"full_name"`
-	Description *string  `json:"description"`
-	Language    *string  `json:"language"`
-	StarsCount  int      `json:"stars_count"`
-	ForksCount  int      `json:"forks_count"`
+	FullName    string  `json:"full_name"`
+	Description *string `json:"description"`
+	Language    *string `json:"language"`
+	StarsCount  int     `json:"stars_count"`
+	ForksCount  int     `json:"forks_count"`
 	// SubscribersCount 是 GitHub 真实 Watch 数（subscribers_count）。
 	// 旧分享记录缺省为 0；勿与 list API 的 watchers_count（常等于 stars）混淆。
 	SubscribersCount int      `json:"subscribers_count"`
