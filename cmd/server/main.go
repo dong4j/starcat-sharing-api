@@ -105,9 +105,10 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", healthzHandler)
 	mux.HandleFunc("GET /s/{id}", shareHandler.HandleRenderShare)
-	// 品牌图标放在已由 Nginx 转发的 /r/ 下，确保官网反代、Fly 直连和本地预览
-	// 都由同一服务响应，不依赖外部静态目录。
+	// 品牌图标 / 字体放在 Nginx 已转发的 /r/ 下（CSP font-src 'self'）。
+	// 必须注册在 /r/{owner}/{repo} 之前，避免被当成 GitHub 仓库路径。
 	mux.HandleFunc("GET /r/starcat-logo.png", starcatLogoHandler)
+	mux.Handle("GET /r/fonts/", shareFontsHandler())
 	mux.HandleFunc("GET /r/{owner}/{repo}", repositoryHandler.HandleRepositoryPage)
 	// Go ServeMux wildcard 必须占完整 segment，因此 `.png` 后缀由 handler 校验。
 	mux.HandleFunc("GET /og/repo/{owner}/{repo}", repositoryHandler.HandleRepositoryOG)
@@ -151,6 +152,16 @@ func starcatLogoHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("Cache-Control", "public, max-age=604800, immutable")
 	w.Write(render.StarcatLogoPNG())
+}
+
+// shareFontsHandler 提供 Hard Pixel 分享页同域 woff2（Press Start 2P / IBM Plex Mono）。
+func shareFontsHandler() http.Handler {
+	fileServer := http.FileServer(http.Dir("static/fonts"))
+	stripped := http.StripPrefix("/r/fonts/", fileServer)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=604800, immutable")
+		stripped.ServeHTTP(w, r)
+	})
 }
 
 // repoOwner 从 "owner/name" 取出 owner，供分享页模板使用。
