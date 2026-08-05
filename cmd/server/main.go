@@ -82,14 +82,15 @@ func main() {
 	// 装配鉴权中间件
 	authMW := middleware.NewBearerAuth(apiKeys)
 
-	// 装配 handler
-	shareHandler := handler.NewShareHandler(sqliteStore, templates, baseURL)
+	// 装配 handler（share 与 /r 预览共用 GitHub client，补全 WATCH）
+	githubRepos := githubclient.NewClient(os.Getenv("GITHUB_API_BASE_URL"), githubTokens)
+	shareHandler := handler.NewShareHandler(sqliteStore, templates, baseURL, githubRepos)
 	repositoryRenderer, err := render.NewOGRenderer()
 	if err != nil {
 		log.Fatalf("Failed to initialize repository OG renderer: %v", err)
 	}
 	repositoryHandler, err := handler.NewRepositoryHandler(
-		githubclient.NewClient(os.Getenv("GITHUB_API_BASE_URL"), githubTokens),
+		githubRepos,
 		cache.NewRepositoryCache(time.Hour, 512),
 		repositoryRenderer,
 		templates,

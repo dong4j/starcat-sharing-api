@@ -23,6 +23,7 @@ func TestClientFetchRepositoryMapsPublicMetadata(t *testing.T) {
 			"description": "Knowledge base",
 			"stargazers_count": 1234,
 			"forks_count": 42,
+			"subscribers_count": 21,
 			"language": "Swift",
 			"topics": ["macos", "github"],
 			"html_url": "https://github.com/starcat-app/Starcat",
@@ -43,7 +44,7 @@ func TestClientFetchRepositoryMapsPublicMetadata(t *testing.T) {
 	if repository.ID != 99 || repository.FullName != "starcat-app/Starcat" || repository.Language != "Swift" {
 		t.Fatalf("unexpected repository mapping: %+v", repository)
 	}
-	if repository.Stars != 1234 || repository.Forks != 42 || len(repository.Topics) != 2 {
+	if repository.Stars != 1234 || repository.Forks != 42 || repository.Subscribers != 21 || len(repository.Topics) != 2 {
 		t.Fatalf("repository statistics not mapped: %+v", repository)
 	}
 }

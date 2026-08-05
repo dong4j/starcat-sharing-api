@@ -11,14 +11,16 @@ import (
 
 // RepositoryPreview 是 HTML 页面和 OG 图片共享的只读仓库模型。
 type RepositoryPreview struct {
-	ID            int64
-	Owner         string
-	Name          string
-	FullName      string
-	Description   string
-	Language      string
-	Stars         int
-	Forks         int
+	ID          int64
+	Owner       string
+	Name        string
+	FullName    string
+	Description string
+	Language    string
+	Stars       int
+	Forks       int
+	// Subscribers 是 GitHub 真实 Watch 数（subscribers_count），与 watchers_count 不同。
+	Subscribers   int
 	Topics        []string
 	AvatarURL     string
 	HTMLURL       string

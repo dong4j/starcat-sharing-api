@@ -12,6 +12,7 @@
   - 修 `ExpiresAt` 零值误显示 `0001-01-01`；`one_liner` / summary 走 Markdown 渲染。
   - 指标区 STARS / FORKS / WATCH；契约新增可选 `repo.subscribers_count`（旧记录缺省 0）。
 - **分享页 CSP 兼容（2026-08-05）**：`marked`/`DOMPurify` 改走 `unpkg.com`（starcat.ink CSP 禁 jsdelivr）；ONE_LINER 服务端纯文本兜底，脚本失败不再空白。
+- **分享页 WATCH 服务端补全（2026-08-05）**：创建/渲染 `/s/{id}` 时若 `subscribers_count` 为 0，用 GitHub `/repos` 真值回填并落库（兼容 stars list 客户端缺字段）。
 
 ### Added
 - **Canonical repository sharing (2026-07-21)**：新增公开 `/r/{owner}/{repo}` 服务端落地页和 `/og/repo/{owner}/{repo}.png` 动态 Open Graph 卡片。
