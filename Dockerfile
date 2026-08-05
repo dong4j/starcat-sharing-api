@@ -48,6 +48,7 @@ WORKDIR /app
 # 从 builder 阶段复制编译产物和模板
 COPY --from=builder /app/bin/server /app/server
 COPY --from=builder /app/templates /app/templates
+COPY --from=builder /app/static /app/static
 
 # 切换到非 root 用户
 USER app

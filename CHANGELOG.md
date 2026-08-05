@@ -14,6 +14,7 @@
 - **分享页 CSP 兼容（2026-08-05）**：`marked`/`DOMPurify` 改走 `unpkg.com`（starcat.ink CSP 禁 jsdelivr）；ONE_LINER 服务端纯文本兜底，脚本失败不再空白。
 - **分享页 WATCH 服务端补全（2026-08-05）**：创建/渲染 `/s/{id}` 时若 `subscribers_count` 为 0，用 GitHub `/repos` 真值回填并落库（兼容 stars list 客户端缺字段）。
 - **分享页指标实时刷新（2026-08-05）**：打开 `/s/{id}` 时经进程内 TTL cache 刷新 STARS/FORKS/WATCH；AI 正文仍用创建快照，失败回退快照且不回写 DB。
+- **分享页像素字体同域托管（2026-08-05）**：`Press Start 2P` / `IBM Plex Mono` 改为 `/r/fonts/*.woff2`，绕过 CSP 对外链 Google Fonts 的拦截。
 
 ### Added
 - **Canonical repository sharing (2026-07-21)**：新增公开 `/r/{owner}/{repo}` 服务端落地页和 `/og/repo/{owner}/{repo}.png` 动态 Open Graph 卡片。
