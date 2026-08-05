@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -108,7 +110,8 @@ func main() {
 	// 品牌图标 / 字体放在 Nginx 已转发的 /r/ 下（CSP font-src 'self'）。
 	// 必须注册在 /r/{owner}/{repo} 之前，避免被当成 GitHub 仓库路径。
 	mux.HandleFunc("GET /r/starcat-logo.png", starcatLogoHandler)
-	mux.Handle("GET /r/fonts/", shareFontsHandler())
+	// 字面量 /r/fonts/{file} 比 /r/{owner}/{repo} 更具体，可安全共存。
+	mux.HandleFunc("GET /r/fonts/{file}", shareFontHandler)
 	mux.HandleFunc("GET /r/{owner}/{repo}", repositoryHandler.HandleRepositoryPage)
 	// Go ServeMux wildcard 必须占完整 segment，因此 `.png` 后缀由 handler 校验。
 	mux.HandleFunc("GET /og/repo/{owner}/{repo}", repositoryHandler.HandleRepositoryOG)
@@ -154,14 +157,24 @@ func starcatLogoHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Write(render.StarcatLogoPNG())
 }
 
-// shareFontsHandler 提供 Hard Pixel 分享页同域 woff2（Press Start 2P / IBM Plex Mono）。
-func shareFontsHandler() http.Handler {
-	fileServer := http.FileServer(http.Dir("static/fonts"))
-	stripped := http.StripPrefix("/r/fonts/", fileServer)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "public, max-age=604800, immutable")
-		stripped.ServeHTTP(w, r)
-	})
+// shareFontHandler 提供 Hard Pixel 分享页同域 woff2（Press Start 2P / IBM Plex Mono）。
+// 只放行 static/fonts 下已知文件名，避免路径穿越。
+func shareFontHandler(w http.ResponseWriter, r *http.Request) {
+	file := path.Base(r.PathValue("file"))
+	switch file {
+	case "press-start-2p-latin-400-normal.woff2",
+		"ibm-plex-mono-latin-400-normal.woff2",
+		"ibm-plex-mono-latin-500-normal.woff2",
+		"ibm-plex-mono-latin-600-normal.woff2",
+		"ibm-plex-mono-latin-700-normal.woff2":
+		// ok
+	default:
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "font/woff2")
+	w.Header().Set("Cache-Control", "public, max-age=604800, immutable")
+	http.ServeFile(w, r, filepath.Join("static", "fonts", file))
 }
 
 // repoOwner 从 "owner/name" 取出 owner，供分享页模板使用。
