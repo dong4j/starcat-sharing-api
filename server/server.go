@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	kitenv "github.com/starcat-app/starcat-api-kit/env"
 	"github.com/starcat-app/starcat-sharing-api/internal/cache"
 	githubclient "github.com/starcat-app/starcat-sharing-api/internal/github"
 	"github.com/starcat-app/starcat-sharing-api/internal/handler"
@@ -56,17 +57,17 @@ func DefaultPort() string { return defaultPort }
 
 // FromEnv 从环境变量装配服务（与历史 cmd/server 行为一致）。
 func FromEnv() (*Service, error) {
-	apiKeysStr := os.Getenv("API_KEYS")
-	if apiKeysStr == "" {
+	apiKeys, err := kitenv.RequiredCSV("API_KEYS")
+	if err != nil {
 		return nil, fmt.Errorf("API_KEYS env is required (comma-separated list of valid API keys)")
 	}
 	opt := Options{
-		Port:             envOrDefault("PORT", defaultPort),
-		StoreFile:        envOrDefault("STORE_FILE", defaultStoreFile),
-		BaseURL:          envOrDefault("BASE_URL", defaultBaseURL),
-		APIKeys:          strings.Split(apiKeysStr, ","),
-		GithubTokens:     strings.Split(os.Getenv("GITHUB_TOKENS"), ","),
-		GithubAPIBaseURL: os.Getenv("GITHUB_API_BASE_URL"),
+		Port:             kitenv.OrDefault("PORT", defaultPort),
+		StoreFile:        kitenv.OrDefault("STORE_FILE", defaultStoreFile),
+		BaseURL:          kitenv.OrDefault("BASE_URL", defaultBaseURL),
+		APIKeys:          apiKeys,
+		GithubTokens:     kitenv.CSV(os.Getenv("GITHUB_TOKENS")),
+		GithubAPIBaseURL: strings.TrimSpace(os.Getenv("GITHUB_API_BASE_URL")),
 	}
 	return New(opt)
 }

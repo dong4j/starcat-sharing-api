@@ -16,6 +16,13 @@
 - **分享页指标实时刷新（2026-08-05）**：打开 `/s/{id}` 时经进程内 TTL cache 刷新 STARS/FORKS/WATCH；AI 正文仍用创建快照，失败回退快照且不回写 DB。
 - **分享页像素字体同域托管（2026-08-05）**：`Press Start 2P` / `IBM Plex Mono` 改为 `/r/fonts/*.woff2`，绕过 CSP 对外链 Google Fonts 的拦截。
 
+## [2.1.0] - 2026-08-07
+
+### Changed
+- 导出可装配 `server` 包；依赖 `starcat-api-kit`。
+- `FetchRepository` 改走 kit `github.GetRepo`（保留 404/私有合并与匿名预览语义）。
+- `/api/v1/ping` 改用 kit `httputil.HandlePingV1`；`FromEnv` 改用 kit `env`。
+
 ### Added
 - **Canonical repository sharing (2026-07-21)**：新增公开 `/r/{owner}/{repo}` 服务端落地页和 `/og/repo/{owner}/{repo}.png` 动态 Open Graph 卡片。
   - 复用 quota-aware `GITHUB_TOKENS` pool，并增加有界 TTL cache 与并发请求合并。
@@ -65,7 +72,8 @@
 - 贡献指南和变更日志
 - 内部版本号包 (`internal/version`, 暴露 `version.Version` 常量)
 
-[Unreleased]: https://github.com/starcat-app/starcat-sharing-api/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/starcat-app/starcat-sharing-api/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/starcat-app/starcat-sharing-api/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/starcat-app/starcat-sharing-api/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/starcat-app/starcat-sharing-api/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/starcat-app/starcat-sharing-api/releases/tag/v1.0.0
