@@ -16,6 +16,11 @@
 - **分享页指标实时刷新（2026-08-05）**：打开 `/s/{id}` 时经进程内 TTL cache 刷新 STARS/FORKS/WATCH；AI 正文仍用创建快照，失败回退快照且不回写 DB。
 - **分享页像素字体同域托管（2026-08-05）**：`Press Start 2P` / `IBM Plex Mono` 改为 `/r/fonts/*.woff2`，绕过 CSP 对外链 Google Fonts 的拦截。
 
+## [2.1.1] - 2026-08-07
+
+### Changed
+- HTML 模板与 `/r/fonts/*.woff2` 改为 `go:embed`（`internal/assets`），启动不再依赖进程 cwd 下的 `templates/` / `static/`；聚合部署与 Docker 镜像无需再单独 COPY 这些目录。
+
 ## [2.1.0] - 2026-08-07
 
 ### Changed

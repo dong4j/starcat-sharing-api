@@ -94,9 +94,9 @@ git push origin feat/your-feature-name
 
 ```
 starcat-sharing-api/
-├── main.go          # 程序入口
-├── templates/       # HTML 模板
-├── data.json        # 运行时数据（已 gitignore）
+├── cmd/server/           # 程序入口
+├── server/               # 可导出装配包（聚合网关 import）
+├── internal/assets/      # go:embed 的 HTML 模板与字体
 └── ...
 ```
 

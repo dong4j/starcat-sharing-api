@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/starcat-app/starcat-sharing-api/internal/assets"
 	"github.com/starcat-app/starcat-sharing-api/internal/cache"
 	githubclient "github.com/starcat-app/starcat-sharing-api/internal/github"
 	"github.com/starcat-app/starcat-sharing-api/internal/model"
@@ -32,7 +33,7 @@ func (fakeOGRenderer) Render(model.RepositoryPreview, image.Image) ([]byte, erro
 
 func newRepositoryTestHandler(t *testing.T, source fakeRepositorySource) *RepositoryHandler {
 	t.Helper()
-	templates, err := template.New("").Funcs(template.FuncMap{
+	templates, err := assets.ParseHTML(template.FuncMap{
 		"repoOwner": func(fullName string) string {
 			for i := 0; i < len(fullName); i++ {
 				if fullName[i] == '/' {
@@ -52,7 +53,7 @@ func newRepositoryTestHandler(t *testing.T, source fakeRepositorySource) *Reposi
 			}
 			return fullName
 		},
-	}).ParseGlob("../../templates/*.html")
+	})
 	if err != nil {
 		t.Fatalf("parse templates: %v", err)
 	}

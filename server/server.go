@@ -1,7 +1,7 @@
 // Package server 导出 sharing-api 的可装配 HTTP 服务。
 //
 // 单仓部署走 cmd/server；聚合部署（starcat-api）import 本包并挂到网关。
-// 模板与 static 仍相对进程工作目录解析（与历史 cmd/server 一致）。
+// HTML 模板与分享页字体经 internal/assets go:embed 打进二进制，不依赖进程 cwd。
 package server
 
 import (
@@ -11,11 +11,11 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
 	kitenv "github.com/starcat-app/starcat-api-kit/env"
+	"github.com/starcat-app/starcat-sharing-api/internal/assets"
 	"github.com/starcat-app/starcat-sharing-api/internal/cache"
 	githubclient "github.com/starcat-app/starcat-sharing-api/internal/github"
 	"github.com/starcat-app/starcat-sharing-api/internal/handler"
@@ -92,13 +92,13 @@ func New(opt Options) (*Service, error) {
 		return nil, fmt.Errorf("initialize SQLite store: %w", err)
 	}
 
-	tmpl, err := template.New("").Funcs(template.FuncMap{
+	tmpl, err := assets.ParseHTML(template.FuncMap{
 		"repoOwner": repoOwner,
 		"repoName":  repoName,
-	}).ParseGlob("templates/*.html")
+	})
 	if err != nil {
 		sqliteStore.Close()
-		return nil, fmt.Errorf("parse templates: %w", err)
+		return nil, err
 	}
 
 	authMW := middleware.NewBearerAuth(opt.APIKeys)
@@ -180,19 +180,14 @@ func starcatLogoHandler(w http.ResponseWriter, _ *http.Request) {
 
 func shareFontHandler(w http.ResponseWriter, r *http.Request) {
 	file := path.Base(r.PathValue("file"))
-	switch file {
-	case "press-start-2p-latin-400-normal.woff2",
-		"ibm-plex-mono-latin-400-normal.woff2",
-		"ibm-plex-mono-latin-500-normal.woff2",
-		"ibm-plex-mono-latin-600-normal.woff2",
-		"ibm-plex-mono-latin-700-normal.woff2":
-	default:
+	data, ok := assets.Font(file)
+	if !ok {
 		http.NotFound(w, r)
 		return
 	}
 	w.Header().Set("Content-Type", "font/woff2")
 	w.Header().Set("Cache-Control", "public, max-age=604800, immutable")
-	http.ServeFile(w, r, filepath.Join("static", "fonts", file))
+	_, _ = w.Write(data)
 }
 
 func repoOwner(fullName string) string {

@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/starcat-app/starcat-sharing-api/internal/assets"
 	"github.com/starcat-app/starcat-sharing-api/internal/model"
 )
 
 func TestShareHTMLTemplateRendersHardPixel(t *testing.T) {
-	tmpl, err := template.New("").Funcs(template.FuncMap{
+	tmpl, err := assets.ParseHTML(template.FuncMap{
 		"repoOwner": func(fullName string) string {
 			if i := strings.IndexByte(fullName, '/'); i > 0 {
 				return fullName[:i]
@@ -24,7 +25,7 @@ func TestShareHTMLTemplateRendersHardPixel(t *testing.T) {
 			}
 			return fullName
 		},
-	}).ParseFiles("../../templates/share.html")
+	})
 	if err != nil {
 		t.Fatalf("parse share.html: %v", err)
 	}

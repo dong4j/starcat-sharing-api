@@ -40,15 +40,12 @@ ENV TZ=UTC
 RUN addgroup -S app && adduser -S app -G app
 
 # 工作目录固定在 /app
-# - /app/server   : 编译产物
-# - /app/templates: HTML 模板 (main.go 启动时 template.ParseGlob 读取)
+# - /app/server : 编译产物（HTML 模板与字体已 go:embed 进二进制）
 # 数据文件路径由 STORE_FILE 环境变量指向挂载卷 /data, 不在镜像中
 WORKDIR /app
 
-# 从 builder 阶段复制编译产物和模板
+# 从 builder 阶段复制编译产物
 COPY --from=builder /app/bin/server /app/server
-COPY --from=builder /app/templates /app/templates
-COPY --from=builder /app/static /app/static
 
 # 切换到非 root 用户
 USER app
