@@ -73,6 +73,8 @@ func TestShareHTMLTemplateRendersHardPixel(t *testing.T) {
 		`data-watch="0"`,
 		"ONE_LINER",
 		"[ WATCH ]",
+		"https://github.com/starcat-app/Starcat",
+		"Open source on GitHub",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q in rendered HTML", want)
