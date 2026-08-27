@@ -101,6 +101,8 @@ func TestRepositoryPageContainsServerRenderedOGMetadata(t *testing.T) {
 		`class="fork-icon"`,
 		`<strong>1.2k</strong> stars`,
 		`<strong>42</strong> forks`,
+		`href="https://github.com/starcat-app/Starcat"`,
+		`Open source on GitHub`,
 	} {
 		if !strings.Contains(body, expected) {
 			t.Fatalf("missing %q in HTML", expected)

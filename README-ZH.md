@@ -93,6 +93,7 @@ go run ./cmd/server/
 |------|------|--------|
 | `PORT` | 服务端口 | `5001` |
 | `STORE_FILE` | SQLite 数据库路径 | `./sharing.db` |
+| `METRICS_STORE_FILE` | 独立请求指标 SQLite 路径 | `./sharing-metrics.db` |
 | `BASE_URL` | 短链基础 URL | `http://localhost:5001` |
 | `API_KEYS` | Bearer Token 白名单（逗号分隔） | 必填 |
 | `GITHUB_TOKENS` | GitHub PAT 池，供公开仓库预览使用 | 本地可空，生产必填 |
@@ -171,6 +172,14 @@ go run ./cmd/server/
 
 健康检查，返回 `ok`。
 
+## 运营与调用指标
+
+- `GET /internal/stats`：分享生命周期、近期创建量与访问量统计。
+- `GET /internal/shares?sort=recent|visits&limit=1..100`：受限活动列表，不返回仓库正文或 AI 文本。
+- `GET /internal/metrics/{summary,timeseries,routes,status-codes}`：按路由模板聚合调用量、错误与延迟。
+
+指标不会保存凭据、请求体、查询串、客户端地址或真实路径参数。
+
 ## 鉴权
 
 所有 `/api/v1/*` 端点需要 `Authorization: Bearer <api-key>` 头。API Key 通过 `API_KEYS` 环境变量配置（逗号分隔多个 key）。
@@ -189,6 +198,7 @@ fly secrets set \
   GITHUB_TOKENS="ghp_token1,ghp_token2" \
   BASE_URL="https://starcat.ink" \
   STORE_FILE="/data/sharing.db" \
+  METRICS_STORE_FILE="/data/sharing-metrics.db" \
   -a starcat-sharing-api
 
 fly deploy -a starcat-sharing-api

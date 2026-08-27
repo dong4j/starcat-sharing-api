@@ -93,6 +93,7 @@ The default port is `5001`.
 |------|------|--------|
 | `PORT` | Server port | `5001` |
 | `STORE_FILE` | SQLite database path | `./sharing.db` |
+| `METRICS_STORE_FILE` | Dedicated request metrics SQLite path | `./sharing-metrics.db` |
 | `BASE_URL` | Base URL for short links | `http://localhost:5001` |
 | `API_KEYS` | Bearer Token allowlist (comma-separated) | Required |
 | `GITHUB_TOKENS` | GitHub PAT pool used by public repository previews | Optional locally, required in production |
@@ -171,6 +172,14 @@ Returns a `1280×640 image/png`. Missing repositories, GitHub rate limits, and a
 
 Health check that returns `ok`.
 
+## Operations and Metrics
+
+- `GET /internal/stats`: share lifecycle, recent creation, and visit totals.
+- `GET /internal/shares?sort=recent|visits&limit=1..100`: bounded activity rows without repository payload or AI text.
+- `GET /internal/metrics/{summary,timeseries,routes,status-codes}`: aggregated route-template traffic, errors, and latency.
+
+Metrics never store credentials, request bodies, query strings, client addresses, or real path parameters.
+
 ## Authentication
 
 All `/api/v1/*` endpoints require the `Authorization: Bearer <api-key>` header. Configure API keys with the `API_KEYS` environment variable as a comma-separated list.
@@ -189,6 +198,7 @@ fly secrets set \
   GITHUB_TOKENS="ghp_token1,ghp_token2" \
   BASE_URL="https://starcat.ink" \
   STORE_FILE="/data/sharing.db" \
+  METRICS_STORE_FILE="/data/sharing-metrics.db" \
   -a starcat-sharing-api
 
 fly deploy -a starcat-sharing-api

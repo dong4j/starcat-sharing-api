@@ -15,6 +15,7 @@ import (
 	"time"
 
 	kitenv "github.com/starcat-app/starcat-api-kit/env"
+	kitmetrics "github.com/starcat-app/starcat-api-kit/metrics"
 	"github.com/starcat-app/starcat-sharing-api/internal/assets"
 	"github.com/starcat-app/starcat-sharing-api/internal/cache"
 	githubclient "github.com/starcat-app/starcat-sharing-api/internal/github"
@@ -35,6 +36,7 @@ const (
 type Options struct {
 	Port                   string
 	StoreFile              string
+	MetricsStoreFile       string
 	BaseURL                string
 	APIKeys                []string
 	GithubTokens           []string
@@ -47,6 +49,7 @@ type Service struct {
 	opts        Options
 	handler     http.Handler
 	sqliteStore *store.SQLiteStore
+	metrics     *kitmetrics.Collector
 }
 
 // Name 返回聚合网关识别用的稳定服务名。
@@ -64,6 +67,7 @@ func FromEnv() (*Service, error) {
 	opt := Options{
 		Port:             kitenv.OrDefault("PORT", defaultPort),
 		StoreFile:        kitenv.OrDefault("STORE_FILE", defaultStoreFile),
+		MetricsStoreFile: kitenv.OrDefault("METRICS_STORE_FILE", "./sharing-metrics.db"),
 		BaseURL:          kitenv.OrDefault("BASE_URL", defaultBaseURL),
 		APIKeys:          apiKeys,
 		GithubTokens:     kitenv.CSV(os.Getenv("GITHUB_TOKENS")),
@@ -79,6 +83,10 @@ func New(opt Options) (*Service, error) {
 	}
 	if strings.TrimSpace(opt.StoreFile) == "" {
 		opt.StoreFile = defaultStoreFile
+	}
+	if strings.TrimSpace(opt.MetricsStoreFile) == "" {
+		// Programmatic tests and embedders get an isolated store; FromEnv always configures persistence.
+		opt.MetricsStoreFile = ":memory:"
 	}
 	if strings.TrimSpace(opt.BaseURL) == "" {
 		opt.BaseURL = defaultBaseURL
@@ -102,13 +110,26 @@ func New(opt Options) (*Service, error) {
 	}
 
 	authMW := middleware.NewBearerAuth(opt.APIKeys)
+	metricsStore, err := kitmetrics.OpenSQLite(opt.MetricsStoreFile)
+	if err != nil {
+		_ = sqliteStore.Close()
+		return nil, fmt.Errorf("initialize metrics SQLite: %w", err)
+	}
+	metricsCollector, err := kitmetrics.NewCollector(kitmetrics.Config{Service: Name(), Store: metricsStore})
+	if err != nil {
+		_ = metricsStore.Close()
+		_ = sqliteStore.Close()
+		return nil, fmt.Errorf("initialize metrics collector: %w", err)
+	}
+	metricsHandler := kitmetrics.NewHandler(Name(), metricsCollector.Store())
 
 	githubRepos := githubclient.NewClient(opt.GithubAPIBaseURL, opt.GithubTokens)
 	repoCache := cache.NewRepositoryCache(time.Hour, 512)
 	shareHandler := handler.NewShareHandler(sqliteStore, tmpl, opt.BaseURL, githubRepos, repoCache)
 	repositoryRenderer, err := render.NewOGRenderer()
 	if err != nil {
-		sqliteStore.Close()
+		_ = metricsCollector.Close()
+		_ = sqliteStore.Close()
 		return nil, fmt.Errorf("initialize repository OG renderer: %w", err)
 	}
 	repositoryHandler, err := handler.NewRepositoryHandler(
@@ -119,7 +140,8 @@ func New(opt Options) (*Service, error) {
 		opt.BaseURL,
 	)
 	if err != nil {
-		sqliteStore.Close()
+		_ = metricsCollector.Close()
+		_ = sqliteStore.Close()
 		return nil, fmt.Errorf("initialize repository preview handler: %w", err)
 	}
 
@@ -133,6 +155,11 @@ func New(opt Options) (*Service, error) {
 	mux.Handle("GET /api/v1/ping", authMW.Wrap(handler.HandlePingV1(version.Service, version.Version)))
 	mux.Handle("POST /api/v1/share", authMW.Wrap(http.HandlerFunc(shareHandler.HandleCreateShareV1)))
 	mux.Handle("GET /internal/stats", authMW.Wrap(handler.HandleStats(sqliteStore)))
+	mux.Handle("GET /internal/shares", authMW.Wrap(handler.HandleShareActivity(sqliteStore)))
+	mux.Handle("GET /internal/metrics/summary", authMW.Wrap(http.HandlerFunc(metricsHandler.HandleSummary)))
+	mux.Handle("GET /internal/metrics/timeseries", authMW.Wrap(http.HandlerFunc(metricsHandler.HandleTimeseries)))
+	mux.Handle("GET /internal/metrics/routes", authMW.Wrap(http.HandlerFunc(metricsHandler.HandleRoutes)))
+	mux.Handle("GET /internal/metrics/status-codes", authMW.Wrap(http.HandlerFunc(metricsHandler.HandleStatusCodes)))
 
 	if !opt.SkipListenLogEndpoints {
 		log.Printf("starcat-sharing-api %s starting on port %s", version.Version, opt.Port)
@@ -148,8 +175,9 @@ func New(opt Options) (*Service, error) {
 
 	return &Service{
 		opts:        opt,
-		handler:     middleware.CORS(mux),
+		handler:     metricsCollector.Wrap(middleware.CORS(mux)),
 		sqliteStore: sqliteStore,
+		metrics:     metricsCollector,
 	}, nil
 }
 
@@ -161,10 +189,18 @@ func (s *Service) Addr() string { return ":" + s.opts.Port }
 
 // Close 关闭 SQLite 连接。
 func (s *Service) Close() error {
-	if s.sqliteStore != nil {
-		return s.sqliteStore.Close()
+	var closeErr error
+	if s.metrics != nil {
+		if err := s.metrics.Close(); err != nil {
+			closeErr = err
+		}
 	}
-	return nil
+	if s.sqliteStore != nil {
+		if err := s.sqliteStore.Close(); closeErr == nil && err != nil {
+			closeErr = err
+		}
+	}
+	return closeErr
 }
 
 func healthzHandler(w http.ResponseWriter, r *http.Request) {

@@ -7,6 +7,14 @@
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-08-27
+
+### Added
+- 新增分享运营统计与统一接口调用指标，供 Starcat Admin Console 展示业务数据和调用趋势。
+
+### Changed
+- GitHub Actions 不再部署独立 Fly App；官方生产环境统一由 `starcat-api` 聚合服务发布。
+
 ### Changed
 - **AI 分享页 Hard Pixel 视觉（2026-08-05）**：`/s/{id}` 模板重做为暗色像素/极客风。
   - 修 `ExpiresAt` 零值误显示 `0001-01-01`；`one_liner` / summary 走 Markdown 渲染。

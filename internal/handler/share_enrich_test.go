@@ -12,6 +12,7 @@ import (
 
 	"github.com/starcat-app/starcat-sharing-api/internal/cache"
 	"github.com/starcat-app/starcat-sharing-api/internal/model"
+	"github.com/starcat-app/starcat-sharing-api/internal/store"
 )
 
 type fakeRepoClient struct {
@@ -59,6 +60,14 @@ func (m *memoryShareStore) Get(id string) (*model.ShareData, error) {
 }
 
 func (m *memoryShareStore) CountShares() (int, error) { return len(m.data), nil }
+
+func (m *memoryShareStore) GetShareStats(time.Time) (store.ShareStats, error) {
+	return store.ShareStats{TotalShares: len(m.data)}, nil
+}
+
+func (m *memoryShareStore) ListShareActivity(string, int) ([]store.ShareActivity, error) {
+	return nil, nil
+}
 
 func (m *memoryShareStore) Close() error { return nil }
 
