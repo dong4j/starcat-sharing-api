@@ -93,6 +93,7 @@ The default port is `5001`.
 |------|------|--------|
 | `PORT` | Server port | `5001` |
 | `STORE_FILE` | SQLite database path | `./sharing.db` |
+| `METRICS_STORE_FILE` | Dedicated request metrics SQLite path | `./sharing-metrics.db` |
 | `BASE_URL` | Base URL for short links | `http://localhost:5001` |
 | `API_KEYS` | Bearer Token allowlist (comma-separated) | Required |
 | `GITHUB_TOKENS` | GitHub PAT pool used by public repository previews | Optional locally, required in production |
@@ -189,6 +190,7 @@ fly secrets set \
   GITHUB_TOKENS="ghp_token1,ghp_token2" \
   BASE_URL="https://starcat.ink" \
   STORE_FILE="/data/sharing.db" \
+  METRICS_STORE_FILE="/data/sharing-metrics.db" \
   -a starcat-sharing-api
 
 fly deploy -a starcat-sharing-api

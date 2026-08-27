@@ -137,6 +137,75 @@ func (s *SQLiteStore) CountShares() (int, error) {
 	return count, nil
 }
 
+// GetShareStats performs one bounded aggregate query and never reads repository or AI payloads.
+func (s *SQLiteStore) GetShareStats(now time.Time) (ShareStats, error) {
+	var result ShareStats
+	var lastCreated, lastVisited sql.NullString
+	err := s.db.QueryRow(`
+SELECT
+  COUNT(*),
+  COALESCE(SUM(CASE WHEN expires_at IS NULL OR expires_at > ? THEN 1 ELSE 0 END), 0),
+  COALESCE(SUM(CASE WHEN expires_at IS NOT NULL AND expires_at <= ? THEN 1 ELSE 0 END), 0),
+  COALESCE(SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END), 0),
+  COALESCE(SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END), 0),
+  COALESCE(SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END), 0),
+  COALESCE(SUM(visit_count), 0),
+  COALESCE(SUM(CASE WHEN visit_count > 0 THEN 1 ELSE 0 END), 0),
+  MAX(created_at),
+  MAX(last_visited_at)
+FROM shares`,
+		now.Format(time.RFC3339), now.Format(time.RFC3339), now.Add(-24*time.Hour).Format(time.RFC3339),
+		now.Add(-7*24*time.Hour).Format(time.RFC3339), now.Add(-30*24*time.Hour).Format(time.RFC3339),
+	).Scan(&result.TotalShares, &result.ActiveShares, &result.ExpiredShares, &result.Created24Hours,
+		&result.Created7Days, &result.Created30Days, &result.TotalVisits, &result.VisitedShares,
+		&lastCreated, &lastVisited)
+	if err != nil {
+		return ShareStats{}, err
+	}
+	if lastCreated.Valid {
+		result.LastCreatedAt = lastCreated.String
+	}
+	if lastVisited.Valid {
+		result.LastVisitedAt = lastVisited.String
+	}
+	return result, nil
+}
+
+// ListShareActivity extracts only the public repository name from JSON and keeps the result bounded.
+func (s *SQLiteStore) ListShareActivity(sort string, limit int) ([]ShareActivity, error) {
+	order := "created_at DESC"
+	if sort == "visits" {
+		order = "visit_count DESC, last_visited_at DESC, created_at DESC"
+	}
+	rows, err := s.db.Query(`
+SELECT id,
+       COALESCE(json_extract(repo_json, '$.full_name'), json_extract(repo_json, '$.fullName'), ''),
+       created_at, expires_at, visit_count, last_visited_at
+FROM shares
+ORDER BY `+order+`
+LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make([]ShareActivity, 0, limit)
+	for rows.Next() {
+		var item ShareActivity
+		var expiresAt, lastVisited sql.NullString
+		if err := rows.Scan(&item.ID, &item.FullName, &item.CreatedAt, &expiresAt, &item.VisitCount, &lastVisited); err != nil {
+			return nil, err
+		}
+		if expiresAt.Valid {
+			item.ExpiresAt = &expiresAt.String
+		}
+		if lastVisited.Valid {
+			item.LastVisitedAt = &lastVisited.String
+		}
+		result = append(result, item)
+	}
+	return result, rows.Err()
+}
+
 // Close 关闭数据库连接。
 func (s *SQLiteStore) Close() error {
 	return s.db.Close()

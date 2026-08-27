@@ -93,6 +93,7 @@ go run ./cmd/server/
 |------|------|--------|
 | `PORT` | 服务端口 | `5001` |
 | `STORE_FILE` | SQLite 数据库路径 | `./sharing.db` |
+| `METRICS_STORE_FILE` | 独立请求指标 SQLite 路径 | `./sharing-metrics.db` |
 | `BASE_URL` | 短链基础 URL | `http://localhost:5001` |
 | `API_KEYS` | Bearer Token 白名单（逗号分隔） | 必填 |
 | `GITHUB_TOKENS` | GitHub PAT 池，供公开仓库预览使用 | 本地可空，生产必填 |
@@ -189,6 +190,7 @@ fly secrets set \
   GITHUB_TOKENS="ghp_token1,ghp_token2" \
   BASE_URL="https://starcat.ink" \
   STORE_FILE="/data/sharing.db" \
+  METRICS_STORE_FILE="/data/sharing-metrics.db" \
   -a starcat-sharing-api
 
 fly deploy -a starcat-sharing-api

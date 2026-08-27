@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/starcat-app/starcat-sharing-api/internal/model"
+	"github.com/starcat-app/starcat-sharing-api/internal/store"
 )
 
 type fakeStatsStore struct {
@@ -24,6 +26,17 @@ func (f fakeStatsStore) CountShares() (int, error) {
 		return 0, f.err
 	}
 	return f.count, nil
+}
+
+func (f fakeStatsStore) GetShareStats(time.Time) (store.ShareStats, error) {
+	if f.err != nil {
+		return store.ShareStats{}, f.err
+	}
+	return store.ShareStats{TotalShares: f.count}, nil
+}
+
+func (f fakeStatsStore) ListShareActivity(string, int) ([]store.ShareActivity, error) {
+	return nil, f.err
 }
 
 func (f fakeStatsStore) Close() error { return nil }
